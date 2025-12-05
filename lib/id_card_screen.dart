@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:screen_brightness/screen_brightness.dart';
 import 'setup_screen.dart';
 
 class IdCardScreen extends StatefulWidget {
@@ -19,18 +18,8 @@ class _IdCardScreenState extends State<IdCardScreen> {
   void initState() {
     super.initState();
     _loadData();
-    _maxBrightness();
   }
 
-  Future<void> _maxBrightness() async {
-    try { await ScreenBrightness().setScreenBrightness(1.0); } catch (e) {}
-  }
-
-  @override
-  void dispose() {
-    ScreenBrightness().resetScreenBrightness();
-    super.dispose();
-  }
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();

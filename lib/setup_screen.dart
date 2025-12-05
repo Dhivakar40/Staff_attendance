@@ -51,7 +51,6 @@ class _SetupScreenState extends State<SetupScreen> {
               SizedBox(height: 10),
               Text("\"Efficiency is doing things right.\"", style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey), textAlign: TextAlign.center),
               SizedBox(height: 60),
-
               TextField(
                 controller: _idController,
                 textCapitalization: TextCapitalization.characters,
