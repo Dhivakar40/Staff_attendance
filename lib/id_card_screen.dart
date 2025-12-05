@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:screen_brightness/screen_brightness.dart';
-import 'setup_screen.dart'; // <--- Import this so we can navigate back
+import 'setup_screen.dart';
 
 class IdCardScreen extends StatefulWidget {
   @override
@@ -11,6 +12,8 @@ class IdCardScreen extends StatefulWidget {
 
 class _IdCardScreenState extends State<IdCardScreen> {
   String? qrData;
+  String displayId = "";
+  bool isDataCorrupt = false;
 
   @override
   void initState() {
@@ -20,11 +23,7 @@ class _IdCardScreenState extends State<IdCardScreen> {
   }
 
   Future<void> _maxBrightness() async {
-    try {
-      await ScreenBrightness().setScreenBrightness(1.0);
-    } catch (e) {
-      print("Failed to set brightness");
-    }
+    try { await ScreenBrightness().setScreenBrightness(1.0); } catch (e) {}
   }
 
   @override
@@ -35,54 +34,78 @@ class _IdCardScreenState extends State<IdCardScreen> {
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      qrData = prefs.getString('staff_qr_data');
-    });
+    String? storedData = prefs.getString('staff_qr_data');
+
+    if (storedData != null) {
+      // --- SAFETY CHECK: DETECT OLD BAD DATA ---
+      // A valid ID payload {"id":"STF01"} is tiny (< 100 chars).
+      // The old signature data was huge (> 20000 chars).
+      if (storedData.length > 500) {
+        print("Old/Corrupt data detected. Clearing it.");
+        await prefs.remove('staff_qr_data');
+        _goToSetup(); // Send user back to start
+        return;
+      }
+
+      try {
+        Map<String, dynamic> data = jsonDecode(storedData);
+        setState(() {
+          qrData = storedData;
+          displayId = data['id'] ?? "UNKNOWN";
+        });
+      } catch (e) {
+        _goToSetup();
+      }
+    } else {
+      _goToSetup();
+    }
   }
 
-  // --- NEW FUNCTION: RESET DATA ---
+  void _goToSetup() {
+    Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => SetupScreen())
+    );
+  }
+
   Future<void> _resetAndEdit() async {
-    // 1. Confirm with user first (Optional, but good UX)
     bool? confirm = await showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text("Edit Details?"),
-          content: Text("This will delete your current ID and let you create a new one."),
+          title: Text("Reset ID?"),
+          content: Text("Do you want to enter a different Staff ID?"),
           actions: [
             TextButton(child: Text("Cancel"), onPressed: () => Navigator.pop(context, false)),
-            TextButton(child: Text("Edit"), onPressed: () => Navigator.pop(context, true)),
+            TextButton(child: Text("Reset"), onPressed: () => Navigator.pop(context, true)),
           ],
         )
     );
 
     if (confirm == true) {
-      // 2. Clear saved data
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('staff_qr_data');
-
-      // 3. Go back to Setup Screen
-      Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => SetupScreen())
-      );
+      _goToSetup();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // If data isn't loaded yet, show loader
+    if (qrData == null) {
+      return Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Staff ID"),
-        elevation: 0,
+        title: Text("My Gatepass", style: TextStyle(color: Colors.black)),
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        elevation: 0,
         actions: [
-          // Option A: Edit button in top corner
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: Icon(Icons.logout, color: Colors.red),
             onPressed: _resetAndEdit,
-            tooltip: "Edit Details",
+            tooltip: "Reset ID",
           )
         ],
       ),
@@ -90,47 +113,52 @@ class _IdCardScreenState extends State<IdCardScreen> {
         child: SingleChildScrollView(
           child: Center(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: qrData == null
-                  ? CircularProgressIndicator()
-                  : Column(
+              padding: const EdgeInsets.all(30.0),
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SizedBox(height: 20),
-                  Text("OFFICIAL EXAM PASS",
-                      style: TextStyle(fontSize: 18, color: Colors.grey, letterSpacing: 1.5)
-                  ),
-                  SizedBox(height: 30),
 
-                  // The QR Code
                   Container(
-                    padding: EdgeInsets.all(10),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black12, width: 2),
-                        borderRadius: BorderRadius.circular(10)
+                        color: Colors.indigo.shade50,
+                        borderRadius: BorderRadius.circular(20)
+                    ),
+                    child: Text("OFFICIAL EXAM ENTRY", style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                  ),
+
+                  SizedBox(height: 40),
+
+                  // QR CODE WRAPPED IN SAFETY CONTAINER
+                  Container(
+                    padding: EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                        border: Border.all(color: Colors.black12, width: 3),
+                        borderRadius: BorderRadius.circular(20),
+                        color: Colors.white,
+                        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 15, offset: Offset(0, 10))]
                     ),
                     child: QrImageView(
-                      data: qrData!,
+                      data: qrData!, // Now guaranteed to be short
                       version: QrVersions.auto,
-                      size: 280.0,
-                      errorStateBuilder: (cxt, err) {
-                        return Center(child: Text("Data Error. Please Reset."));
+                      size: 260.0,
+                      errorStateBuilder: (ctx, err) {
+                        return Center(child: Text("QR Generation Failed.\nPlease Reset ID."));
                       },
                     ),
                   ),
 
-                  SizedBox(height: 20),
-                  Text("Show this to the Admin", style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(height: 30),
 
-                  SizedBox(height: 40),
+                  Text(
+                    displayId,
+                    style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Colors.black87, letterSpacing: 2),
+                  ),
+                  Text("STAFF ID", style: TextStyle(color: Colors.grey, fontSize: 12)),
 
-                  // Option B: A dedicated button at the bottom
-                  TextButton.icon(
-                    onPressed: _resetAndEdit,
-                    icon: Icon(Icons.refresh, size: 18),
-                    label: Text("Wrong Name? Edit Details"),
-                    style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                  )
+                  SizedBox(height: 50),
+                  Text("Show this QR to the Admin\nto get your Hall Allocation.", textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600])),
                 ],
               ),
             ),
