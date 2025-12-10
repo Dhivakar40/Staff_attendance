@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:screen_brightness/screen_brightness.dart';
-import 'setup_screen.dart'; // <--- Import this so we can navigate back
+import 'setup_screen.dart';
 
 class IdCardScreen extends StatefulWidget {
   @override
@@ -11,131 +11,221 @@ class IdCardScreen extends StatefulWidget {
 
 class _IdCardScreenState extends State<IdCardScreen> {
   String? qrData;
+  String userName = "Staff Member"; // Default placeholder
 
   @override
   void initState() {
     super.initState();
     _loadData();
-    _maxBrightness();
-  }
-
-  Future<void> _maxBrightness() async {
-    try {
-      await ScreenBrightness().setScreenBrightness(1.0);
-    } catch (e) {
-      print("Failed to set brightness");
-    }
-  }
-
-  @override
-  void dispose() {
-    ScreenBrightness().resetScreenBrightness();
-    super.dispose();
   }
 
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      qrData = prefs.getString('staff_qr_data');
-    });
+    String? storedData = prefs.getString('staff_qr_data');
+
+    if (storedData != null) {
+      try {
+        // Parse the JSON to get the name for the UI
+        Map<String, dynamic> decoded = jsonDecode(storedData);
+        setState(() {
+          qrData = storedData;
+          userName = "Staff Member";
+        });
+      } catch (e) {
+        setState(() {
+          qrData = storedData;
+        });
+      }
+    }
   }
 
-  // --- NEW FUNCTION: RESET DATA ---
   Future<void> _resetAndEdit() async {
-    // 1. Confirm with user first (Optional, but good UX)
     bool? confirm = await showDialog(
         context: context,
         builder: (context) => AlertDialog(
           title: Text("Edit Details?"),
-          content: Text("This will delete your current ID and let you create a new one."),
+          content: Text("This will delete your current ID pass."),
           actions: [
-            TextButton(child: Text("Cancel"), onPressed: () => Navigator.pop(context, false)),
-            TextButton(child: Text("Edit"), onPressed: () => Navigator.pop(context, true)),
+            TextButton(
+              child: Text("Cancel", style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.pop(context, false),
+            ),
+            TextButton(
+              child: Text("Edit", style: TextStyle(color: Color(0xFF1E88E5))),
+              onPressed: () => Navigator.pop(context, true),
+            ),
           ],
-        )
-    );
+        ));
 
     if (confirm == true) {
-      // 2. Clear saved data
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('staff_qr_data');
 
-      // 3. Go back to Setup Screen
       Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => SetupScreen())
-      );
+          context, MaterialPageRoute(builder: (context) => SetupScreen()));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Brand Colors (Same as Setup Screen)
+    final Color brandColor = Color(0xFF1E88E5);
+    final Color backgroundColor = Color(0xFFF5F7FA);
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: Text("Staff ID"),
+        title: Text("My ID Pass", style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        backgroundColor: brandColor,
         elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         actions: [
-          // Option A: Edit button in top corner
           IconButton(
-            icon: Icon(Icons.edit),
+            icon: Icon(Icons.logout),
+            tooltip: "Reset ID",
             onPressed: _resetAndEdit,
-            tooltip: "Edit Details",
           )
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: qrData == null
-                  ? CircularProgressIndicator()
-                  : Column(
+      body: qrData == null
+          ? Center(child: CircularProgressIndicator())
+          : Stack(
+        children: [
+          // --- Blue Background Header ---
+          Container(
+            height: 150,
+            decoration: BoxDecoration(
+              color: brandColor,
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+          ),
+
+          // --- The ID Card ---
+          Center(
+            child: SingleChildScrollView(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(height: 20),
-                  Text("OFFICIAL EXAM PASS",
-                      style: TextStyle(fontSize: 18, color: Colors.grey, letterSpacing: 1.5)
-                  ),
-                  SizedBox(height: 30),
-
-                  // The QR Code
                   Container(
-                    padding: EdgeInsets.all(10),
+                    width: 300,
+                    margin: EdgeInsets.symmetric(horizontal: 20),
                     decoration: BoxDecoration(
-                        border: Border.all(color: Colors.black12, width: 2),
-                        borderRadius: BorderRadius.circular(10)
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26,
+                          blurRadius: 20,
+                          offset: Offset(0, 10),
+                        )
+                      ],
                     ),
-                    child: QrImageView(
-                      data: qrData!,
-                      version: QrVersions.auto,
-                      size: 280.0,
-                      errorStateBuilder: (cxt, err) {
-                        return Center(child: Text("Data Error. Please Reset."));
-                      },
+                    child: Column(
+                      children: [
+                        // Card Header
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(vertical: 15),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[100],
+                            borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(20)),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(Icons.business,
+                                  color: Colors.grey[400], size: 40),
+                              SizedBox(height: 5),
+                              Text(
+                                "STAFF ACCESS PASS",
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        SizedBox(height: 30),
+
+                        // QR Code
+                        Container(
+                          padding: EdgeInsets.all(5),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: brandColor, width: 4),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: QrImageView(
+                            data: qrData!,
+                            version: QrVersions.auto,
+                            size: 260.0, // <--- CHANGED FROM 200.0 TO 260.0
+                            backgroundColor: Colors.white,
+                          ),
+                        ),
+
+                        SizedBox(height: 30),
+
+                        // Name Section
+                        Text(
+                          userName,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 5),
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green[50],
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.green[200]!),
+                          ),
+                          child: Text(
+                            "ACTIVE STATUS",
+                            style: TextStyle(
+                              color: Colors.green[700],
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+                        SizedBox(height: 40),
+                      ],
                     ),
                   ),
-
-                  SizedBox(height: 20),
-                  Text("Show this to the Admin", style: TextStyle(fontWeight: FontWeight.bold)),
 
                   SizedBox(height: 40),
 
-                  // Option B: A dedicated button at the bottom
-                  TextButton.icon(
-                    onPressed: _resetAndEdit,
-                    icon: Icon(Icons.refresh, size: 18),
-                    label: Text("Wrong Name? Edit Details"),
-                    style: TextButton.styleFrom(foregroundColor: Colors.redAccent),
-                  )
+                  // Bottom Instruction
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.qr_code_scanner,
+                          size: 18, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Text(
+                        "Align QR code with the scanner",
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
