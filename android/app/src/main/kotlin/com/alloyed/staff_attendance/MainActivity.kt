@@ -1,4 +1,4 @@
-package com.example.staff_attendance
+package com.alloyed.staff_attendance
 
 import io.flutter.embedding.android.FlutterActivity
 

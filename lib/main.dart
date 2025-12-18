@@ -5,11 +5,8 @@ import 'id_card_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Check if data exists
   final prefs = await SharedPreferences.getInstance();
   final String? staffData = prefs.getString('staff_qr_data');
-
   runApp(MyApp(startScreen: staffData == null ? SetupScreen() : IdCardScreen()));
 }
 

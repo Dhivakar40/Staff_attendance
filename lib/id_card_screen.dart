@@ -11,8 +11,7 @@ class IdCardScreen extends StatefulWidget {
 
 class _IdCardScreenState extends State<IdCardScreen> {
   String? qrData;
-  String userName = "Staff Member"; // Default placeholder
-
+  String userName = "Staff Member";
   @override
   void initState() {
     super.initState();
@@ -22,10 +21,8 @@ class _IdCardScreenState extends State<IdCardScreen> {
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     String? storedData = prefs.getString('staff_qr_data');
-
     if (storedData != null) {
       try {
-        // Parse the JSON to get the name for the UI
         Map<String, dynamic> decoded = jsonDecode(storedData);
         setState(() {
           qrData = storedData;
@@ -56,22 +53,18 @@ class _IdCardScreenState extends State<IdCardScreen> {
             ),
           ],
         ));
-
     if (confirm == true) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('staff_qr_data');
-
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => SetupScreen()));
     }
   }
-
+  
   @override
   Widget build(BuildContext context) {
-    // Brand Colors (Same as Setup Screen)
     final Color brandColor = Color(0xFF1E88E5);
     final Color backgroundColor = Color(0xFFF5F7FA);
-
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -92,7 +85,6 @@ class _IdCardScreenState extends State<IdCardScreen> {
           ? Center(child: CircularProgressIndicator())
           : Stack(
         children: [
-          // --- Blue Background Header ---
           Container(
             height: 150,
             decoration: BoxDecoration(
@@ -103,8 +95,6 @@ class _IdCardScreenState extends State<IdCardScreen> {
               ),
             ),
           ),
-
-          // --- The ID Card ---
           Center(
             child: SingleChildScrollView(
               child: Column(
@@ -126,7 +116,6 @@ class _IdCardScreenState extends State<IdCardScreen> {
                     ),
                     child: Column(
                       children: [
-                        // Card Header
                         Container(
                           width: double.infinity,
                           padding: EdgeInsets.symmetric(vertical: 15),
@@ -152,10 +141,7 @@ class _IdCardScreenState extends State<IdCardScreen> {
                             ],
                           ),
                         ),
-
                         SizedBox(height: 30),
-
-                        // QR Code
                         Container(
                           padding: EdgeInsets.all(5),
                           decoration: BoxDecoration(
@@ -165,14 +151,12 @@ class _IdCardScreenState extends State<IdCardScreen> {
                           child: QrImageView(
                             data: qrData!,
                             version: QrVersions.auto,
-                            size: 260.0, // <--- CHANGED FROM 200.0 TO 260.0
+                            size: 260.0,
                             backgroundColor: Colors.white,
                           ),
                         ),
 
                         SizedBox(height: 30),
-
-                        // Name Section
                         Text(
                           userName,
                           style: TextStyle(
@@ -200,15 +184,11 @@ class _IdCardScreenState extends State<IdCardScreen> {
                             ),
                           ),
                         ),
-
                         SizedBox(height: 40),
                       ],
                     ),
                   ),
-
                   SizedBox(height: 40),
-
-                  // Bottom Instruction
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

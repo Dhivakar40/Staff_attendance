@@ -10,23 +10,15 @@ class SetupScreen extends StatefulWidget {
 
 class _SetupScreenState extends State<SetupScreen> {
   final TextEditingController _idController = TextEditingController();
-
   Future<void> _generatePass() async {
     String id = _idController.text.trim().toUpperCase();
-
     if (id.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Please enter your Staff ID")));
       return;
     }
-
-    // --- FIX: Store ONLY the ID string ---
-    // Instead of JSON, we just save "E_01"
-    // This is the simplest, most robust format.
     String qrPayload = id;
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('staff_qr_data', qrPayload);
-
     Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => IdCardScreen())
@@ -48,7 +40,6 @@ class _SetupScreenState extends State<SetupScreen> {
               SizedBox(height: 20),
               Text("OFFICIAL\nEXAM PASS", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.indigo), textAlign: TextAlign.center),
               SizedBox(height: 60),
-
               TextField(
                 controller: _idController,
                 textCapitalization: TextCapitalization.characters,

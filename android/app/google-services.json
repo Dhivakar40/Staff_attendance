@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "704481339490",
+    "project_id": "staff-exam-pass",
+    "storage_bucket": "staff-exam-pass.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:704481339490:android:e560375bbe2de603eb893b",
+        "android_client_info": {
+          "package_name": "com.alloyed.staff_attendance"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOtYaT_EZQnHd_xfb8NBu8AIppsS4zmKU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
